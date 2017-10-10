@@ -1,20 +1,55 @@
 import time
-import Rpi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import sys
-import os from subprocess 
-import Popen
+import subprocess 
+
+class Thing(object):
+    instances = []
+    """Class that will handle a button,selector,etc"""
+
+    def __init__(self, activePort, validPort, *passivePorts):
+        self.activePort = activePort
+        self.validPort = validPort
+        self.passivePorts = passivePorts
+        Thing.instances.append(self)
+        inputPorts = list(passivePorts)
+        inputPorts.append(validPort)
+
+        setInputGpios(inputPorts)
+        #TODO: Set output gpios
+        #TODO: change setInputGpios for input/output function
+
+    def CheckCompleted(self):
+        pass
+
+
+    def CheckReset(self):
+        pass
+
+
+
+class WiresArray(Thing):
+    """handle a wires puzzle composed for various Things"""
+    ##TODO: Eliminate append instance
+    pass
+
+class Game:
+    """This class will handle the data of the game"""
+    pass
+
+
+def setInputGpios(gpiolist):
+    GPIO.setup(gpiolist, GPIO.IN)
+
+GPIO.setmode(GPIO.BOARD)
 
 combinations = [[1, 2], [3, 4], [5, 6]]
 gpiosUsed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 wires = len(combinations)
 movie=("/data/movie")
 
-correctCombinations = 0
-GPIO.setmode(GPIO.BOARD)
 
 
-def setInputGpios(gpiolist):
-    GPIO.setup(gpiolist, GPIO.IN)
 
 
 def checkPairStatus(pair):
@@ -33,17 +68,14 @@ def checkPairStatus(pair):
 
 
 def playEnd():
-    os.system('killall omxplayer.bin')
-    omxc = Popen(['omxplayer', '-b', movie])
+    subprocess.run('killall omxplayer.bin')
+    omxc =  subprocess.Popen(['omxplayer', '-b', movie])
 
 def checkReset(gpiosUsed):
     for pin in gpiosUsed:
         checkcombinations=gpios
         
-
-
 def main():
-    setInputGpios(gpiosUsed)
 
     while correctCombinations < wires:
         correctCombinations = 0
@@ -57,5 +89,5 @@ def main():
     GPIO.cleanup()
 
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
