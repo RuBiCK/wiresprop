@@ -7,8 +7,10 @@ class Thing(object):
     instances = []
     """Class that will handle a button,selector, switch, etc"""
 
-    def __init__(self, activePort, validPort, *passivePorts):
-        self.activePort = activePort
+    def __init__(self, activePort=None, validPort, *passivePorts):
+        """ 0 means that there is no active port because it takes +5v directly and has no 
+        possibity to mix with other things like connecting wires"""
+        self.activePort = activePort if not activePort else None 
         self.validPort = validPort
         self.passivePorts = passivePorts
         Thing.instances.append(self)
@@ -18,7 +20,7 @@ class Thing(object):
         self.inputPorts.append(validPort)
 
         setGpio(inputPorts, "input")
-        setGpio(activePort, "output")
+        setGpio(activePort, "output") if not self.activePort else None
 
     def checkCompleted(self):
         """if we activate the activeport and we receive in the validport, the Thing is solved"""
@@ -26,18 +28,18 @@ class Thing(object):
         must be checked each time you want to know 
         the overall status of the puzzle"""
 
-        GPIO.output(self.activePort, True)
+        GPIO.output(self.activePort, True) if not self.activePort else None
         # TODO: Change to interrupts
         if GPIO.input(self.validPort):        
             return True
         else:
             return False
-        GPIO.output(self.activePort, False)
+        GPIO.output(self.activePort, False) if not self.activePort else None
         
 
     def checkReset(self):
        """Test if the Thing is in its normal(reset) state""" 
-        GPIO.output(self.activePort, True)
+        GPIO.output(self.activePort, True)  if not self.activePort else None
         for port in self.inputPorts:
             if GPIO.input(port):
                 return False
