@@ -41,8 +41,10 @@ class Thing(object):
         GPIO.output(self.activePort, True) if self.activePort else None
         # TODO: Change to interrupts
         if GPIO.input(self.validPort):        
+            self.completed = True
             return True
         else:
+            self.completed = False
             return False
         GPIO.output(self.activePort, False) if self.activePort else None
         
@@ -66,6 +68,7 @@ class WiresPuzzle():
     def __init__(self, *steps, **kwargs):
         """ steps is a tuple that contain Things"""
         self.steps = steps
+        self.completed = False
         for k,v in kwargs.items():
             setattr(self,k,v)
 
@@ -74,11 +77,16 @@ class WiresPuzzle():
 
     def checkCompleted(self):
         """all Things must be completed at the same time """
-        for thing in self.steps:
-            if thing.checkCompleted() == False:
-                return False
-            else:
-                return True
+        self.status = []
+
+        for step in self.steps:
+            self.status.append(step.checkCompleted())
+
+        if False in self.status:
+            return False
+        else:
+            self.completed = True
+            return True
 
 
 class Game:
@@ -96,7 +104,6 @@ class Game:
 
 def setGpio(gpiolist, io):
     """ set a gpio or list of them as input or output mode """
-    print(gpiolist)
     if io == "input":
         GPIO.setup(gpiolist, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     elif io == "output":
@@ -116,14 +123,14 @@ def main():
     playingMovie = False
     while True:
         print('\n')
-        currentCheck = ''
+        currentCheck = None
         for step in ( step for step in game.secuence if game.secuence.index(step) < game.currentStep ):
             """ iterate for each game step until the current one """
             if not step.checkCompleted():
                 currentCheck = False
-            print("Current Puzzle: " , step.name,'| Realizado: ', currentCheck, ' secuenceindex:',game.secuence.index(step),'checknow:',step.checkCompleted())
+            print("Current Puzzle: " , step.name,'| Realizado: ', step.completed, ' secuenceindex:',game.secuence.index(step),'checknow:',step.checkCompleted())
         
-        time.sleep(0.2)
+        time.sleep(0.8)
         
         #playEnd()
         game.currentStep +=1	
@@ -134,17 +141,20 @@ def main():
 
 
 if __name__ == "__main__":
+    GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BOARD)
     movie=("/data/precuelaGotham.mov")
 
-    seleccionador = Thing(38, 40, 36, 32, name = 'seleccionador')
-    wire1 = Thing(35,37,name= 'corriente')
-    wire0 = Thing(31,33,name= 'communicaciones')
-    wire2 = Thing(21,23,name= 'interconexion')
-    wiresPuzzle = WiresPuzzle(wire0,wire1,wire2,name = 'conexiones')
+    #seleccionador = Thing(38, 40, 36, 32, name = 'seleccionador')
+    wire0 = Thing(35, 37, name = 'corriente')
+    wire1 = Thing(31, 33, name = 'communicaciones')
+    wire2 = Thing(36, 38, name = 'interconexion')
+    wiresPuzzle = WiresPuzzle(wire0,wire1,name = 'conexiones')
+    #wiresPuzzle = WiresPuzzle(wire0,wire1,wire2,name = 'conexiones')
     interruptor = Thing(None,40, name = 'encendido')
-    wire3 = Thing(3,5, name = 'cablesuelto')
-    gameSecuence = [ wire3, seleccionador, wiresPuzzle, interruptor ]
+    wire3 = Thing(8,10, name = 'cablesuelto')
+    #gameSecuence = [ wire3, seleccionador, wiresPuzzle, interruptor ]
+    gameSecuence = [ wiresPuzzle ]
     game = Game(gameSecuence)
 
     main()
