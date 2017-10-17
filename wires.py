@@ -82,6 +82,7 @@ class WiresPuzzle():
         for step in self.steps:
             self.status.append(step.checkCompleted())
 
+        """ If there is at least one False, the puzzle is considered not compelted """
         if False in self.status:
             return False
         else:
@@ -146,15 +147,17 @@ if __name__ == "__main__":
     movie=("/data/precuelaGotham.mov")
 
     #seleccionador = Thing(38, 40, 36, 32, name = 'seleccionador')
-    wire0 = Thing(35, 37, name = 'corriente')
-    wire1 = Thing(31, 33, name = 'communicaciones')
-    wire2 = Thing(36, 38, name = 'interconexion')
-    wiresPuzzle = WiresPuzzle(wire0,wire1,name = 'conexiones')
-    #wiresPuzzle = WiresPuzzle(wire0,wire1,wire2,name = 'conexiones')
-    interruptor = Thing(None,40, name = 'encendido')
-    wire3 = Thing(8,10, name = 'cablesuelto')
-    #gameSecuence = [ wire3, seleccionador, wiresPuzzle, interruptor ]
-    gameSecuence = [ wiresPuzzle ]
+    wire1 = Thing(35, 37, name = 'paso1.1')
+    wire2 = Thing(31, 33, name = 'paso1.2')
+    wiresPuzzle1 = WiresPuzzle(wire1, wire2, name = 'Conexiones1')
+
+    wire3 = Thing(38, 40, name = 'paso2.1')
+    wire4 = Thing(32, 36, name = 'paso2.2')
+    wiresPuzzle2 = WiresPuzzle(wire3, wire4, name = 'Conexiones2')
+    
+    switch1 = Thing(None, 23, name = 'switch')
+    #interruptor = Thing(None,40, name = 'encendido')
+    gameSecuence = [ wiresPuzzle1, switch1, wiresPuzzle2 ]
     game = Game(gameSecuence)
 
     main()
