@@ -10,7 +10,6 @@ class Thing(object):
 
     def __init__(self, activePort, validPort, *passivePorts, **kwargs):
         """ setup pin modes of the Thing
-
         'None' active port, means that there is no active port because it takes +5v directly and has no 
         possibity to mix with other things like connecting wires"""
         self.activePort = activePort if activePort else None 
@@ -30,7 +29,7 @@ class Thing(object):
 
 
     def __str__(self):
-            return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
     def checkCompleted(self):
         """if we activate the activeport and we receive in the validport, the Thing is solved
@@ -54,6 +53,7 @@ class Thing(object):
         GPIO.output(self.activePort, True)  if self.activePort else None
         for port in self.inputPorts:
             if GPIO.input(port):
+                print('Reset no realizado en ', self.name)
                 return False
             else:
                 return True
@@ -87,7 +87,21 @@ class WiresPuzzle():
             return False
         else:
             self.completed = True
+            print('Puzzle Wires Completed')
             return True
+
+
+    def checkReset(self):
+        """ All Thing.checkReset() must be true """
+        self.reset = []
+        for step in self.steps:
+            self.reset.append(step.checkReset())
+        if False in self.reset:
+            return False
+        else:
+            print(self.name,' completed')
+            return True
+
 
 
 class Game:
@@ -111,34 +125,40 @@ def setGpio(gpiolist, io):
         GPIO.setup(gpiolist, GPIO.OUT , initial=GPIO.LOW)
 
 
-
 def playEnd():
     subprocess.run(['killall', 'omxplayer.bin'])
-    omxc =  subprocess.Popen(['omxplayer', '-b', movie])
+    omxc =  subprocess.run(['omxplayer', '-b', movie])
 
-def checkReset(gpiosUsed):
-    for pin in gpiosUsed:
-        checkcombinations = gpios
-        
 def main():
     playingMovie = False
     while True:
+        currentCheck = False
         print('\n')
-        currentCheck = None
         for step in ( step for step in game.secuence if game.secuence.index(step) < game.currentStep ):
             """ iterate for each game step until the current one """
-            if not step.checkCompleted():
-                currentCheck = False
-            print("Current Puzzle: " , step.name,'| Realizado: ', step.completed, ' secuenceindex:',game.secuence.index(step),'checknow:',step.checkCompleted())
+            while currentCheck == False: 
+                if step.checkCompleted():
+                    currentCheck = True
+                else:
+                    currentCheck = False
+                print("Current Puzzle: " , step.name,'\nRealizado: ', step.completed, '\nsecuenceindex:',game.secuence.index(step),'\nchecknow:',step.checkCompleted())
+                time.sleep(0.8)
+            currentCheck = False
+            print('pre +1step',game.currentStep)
+            game.currentStep +=1	
+
         
-        time.sleep(0.8)
         
-        #playEnd()
-        game.currentStep +=1	
+        playEnd()
+        for step in game.secuence:
+            print(step.name)
+            while not step.checkReset():
+                print('no reseteado')
+                time.sleep(0.8)
+            print('reseteado')
 
     # TODO:Only play once. Wait for a button pressed
 
-    GPIO.cleanup()
 
 
 if __name__ == "__main__":
@@ -161,3 +181,5 @@ if __name__ == "__main__":
     game = Game(gameSecuence)
 
     main()
+
+    GPIO.cleanup()
