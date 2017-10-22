@@ -4,6 +4,20 @@ import RPi.GPIO as GPIO
 import sys
 import subprocess 
 
+class Relay():
+    def __init__(self, pin):
+        self.pin = pin
+        setGpio(self.pin, 'input')
+        print("relay init a input")
+
+    def activate(self):
+        setGpio(self.pin, 'output')
+        print("relay activo: output")
+
+    def deactivate(self):
+        setGpio(self.pin, 'input')
+        print("relay desactivo: input")
+
 class Thing(object):
     instances = []
     """Class that will handle a button,selector, switch, etc"""
@@ -34,14 +48,15 @@ class Thing(object):
     def checkCompleted(self):
         """if we activate the activeport and we receive in the validport, the Thing is solved
         We don't store the status in a class variables because the status of each Thing 
-        must be checked each time you want to know 
-        the overall status of the puzzle"""
+        must be checked each time you want to know the overall status of the puzzle"""
 
         GPIO.output(self.activePort, True) if self.activePort else None
         # TODO: Change to interrupts
         if GPIO.input(self.validPort):        
-            self.completed = True
-            return True
+            if GPIO.input(self.validPort):
+                """ Double check due to false positives"""
+                self.completed = True
+                return True
         else:
             self.completed = False
             return False
@@ -141,14 +156,14 @@ def main():
                     currentCheck = True
                 else:
                     currentCheck = False
-                print("Current Puzzle: " , step.name,'\nRealizado: ', step.completed, '\nsecuenceindex:',game.secuence.index(step),'\nchecknow:',step.checkCompleted())
+                print("\n\nCurrent Puzzle: " , step.name,'\nRealizado: ', step.completed, '\nsecuenceindex:',game.secuence.index(step),'\nchecknow:',step.checkCompleted())
                 time.sleep(0.8)
             currentCheck = False
             print('pre +1step',game.currentStep)
             game.currentStep +=1	
 
         
-        
+        relay.activate() 
         playEnd()
         for step in game.secuence:
             print(step.name)
@@ -156,6 +171,7 @@ def main():
                 print('no reseteado')
                 time.sleep(0.8)
             print('reseteado')
+            relay.deactivate()
 
     # TODO:Only play once. Wait for a button pressed
 
@@ -166,19 +182,21 @@ if __name__ == "__main__":
     GPIO.setmode(GPIO.BOARD)
     movie=("/data/precuelaGotham.mov")
 
-    #seleccionador = Thing(38, 40, 36, 32, name = 'seleccionador')
-    wire1 = Thing(35, 37, name = 'paso1.1')
-    wire2 = Thing(31, 33, name = 'paso1.2')
+    relay = Relay(40)
+    print('post relay')
+
+
+    wire1 = Thing(29, 23, name = 'paso 4.a')
+    wire2 = Thing(33, 35, name = 'paso 4.b')
+    #wire1 = Thing(37, 8, name = 'paso 4.a')
     wiresPuzzle1 = WiresPuzzle(wire1, wire2, name = 'Conexiones1')
 
-    wire3 = Thing(38, 40, name = 'paso2.1')
-    wire4 = Thing(32, 36, name = 'paso2.2')
-    wiresPuzzle2 = WiresPuzzle(wire3, wire4, name = 'Conexiones2')
     
-    switch1 = Thing(None, 23, name = 'switch')
-    #interruptor = Thing(None,40, name = 'encendido')
-    gameSecuence = [ wiresPuzzle1, switch1, wiresPuzzle2 ]
+   # switch1 = Thing(None, 23, name = 'switch')
+
+    gameSecuence = [ wiresPuzzle1 ]
     game = Game(gameSecuence)
+
 
     main()
 
