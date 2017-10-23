@@ -1,3 +1,5 @@
+#!/usr/bin/python3 
+
 import json
 import time
 import RPi.GPIO as GPIO
@@ -8,17 +10,14 @@ class Relay():
     def __init__(self, pin):
         self.pin = pin
         setGpio(self.pin, 'input')
-        print("relay init a input")
 
     def activate(self):
         setGpio(self.pin, 'output')
-        print("relay activo: output")
 
     def deactivate(self):
         setGpio(self.pin, 'input')
-        print("relay desactivo: input")
 
-class Thing(object):
+class Thing():
     instances = []
     """Class that will handle a button,selector, switch, etc"""
 
@@ -43,7 +42,8 @@ class Thing(object):
 
 
     def __str__(self):
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        return self.name
+        #return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
     def checkCompleted(self):
         """if we activate the activeport and we receive in the validport, the Thing is solved
@@ -53,12 +53,15 @@ class Thing(object):
         GPIO.output(self.activePort, True) if self.activePort else None
         # TODO: Change to interrupts
         if GPIO.input(self.validPort):        
+            time.sleep(0.8)
             if GPIO.input(self.validPort):
                 """ Double check due to false positives"""
                 self.completed = True
+                print ("Paso completado : ", self.name)
                 return True
         else:
             self.completed = False
+            print ("Paso completado : ", self.name)
             return False
         GPIO.output(self.activePort, False) if self.activePort else None
         
@@ -68,9 +71,10 @@ class Thing(object):
         GPIO.output(self.activePort, True)  if self.activePort else None
         for port in self.inputPorts:
             if GPIO.input(port):
-                print('Reset no realizado en ', self.name)
+                print(self.name, ' NO Reseteado', ' port: ', port)
                 return False
             else:
+                print(self.name, ' Reseteado')
                 return True
 
 
@@ -102,7 +106,7 @@ class WiresPuzzle():
             return False
         else:
             self.completed = True
-            print('Puzzle Wires Completed')
+            # print('Puzzle Wires Completed')
             return True
 
 
@@ -113,9 +117,10 @@ class WiresPuzzle():
             self.reset.append(step.checkReset())
         if False in self.reset:
             return False
+            print ("Paso NO completado : ", self.name)
         else:
-            print(self.name,' completed')
-            return True
+            print ("Paso completado : ", self.name)
+            return True   
 
 
 
@@ -148,30 +153,31 @@ def main():
     playingMovie = False
     while True:
         currentCheck = False
-        print('\n')
+        print(game.secuence)
         for step in ( step for step in game.secuence if game.secuence.index(step) < game.currentStep ):
+            print(step.name)
             """ iterate for each game step until the current one """
             while currentCheck == False: 
                 if step.checkCompleted():
                     currentCheck = True
                 else:
                     currentCheck = False
-                print("\n\nCurrent Puzzle: " , step.name,'\nRealizado: ', step.completed, '\nsecuenceindex:',game.secuence.index(step),'\nchecknow:',step.checkCompleted())
-                time.sleep(0.8)
+                time.sleep(0.2)
             currentCheck = False
-            print('pre +1step',game.currentStep)
             game.currentStep +=1	
 
         
         relay.activate() 
         playEnd()
         for step in game.secuence:
-            print(step.name)
             while not step.checkReset():
-                print('no reseteado')
-                time.sleep(0.8)
-            print('reseteado')
+                time.sleep(0.5)
+
+            for step in game.secuence:
+                step.completed = False
+
             relay.deactivate()
+
 
     # TODO:Only play once. Wait for a button pressed
 
@@ -180,23 +186,24 @@ def main():
 if __name__ == "__main__":
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BOARD)
-    movie=("/data/precuelaGotham.mov")
+    movie=("/data/precuelaGotham.mp4")
 
-    relay = Relay(40)
-    print('post relay')
+    relay = Relay(38)
 
-
-    wire1 = Thing(29, 23, name = 'paso 4.a')
-    wire2 = Thing(33, 35, name = 'paso 4.b')
-    #wire1 = Thing(37, 8, name = 'paso 4.a')
+    wire1 = Thing(37, 7, name = 'paso 4.a')
+    wire2 = Thing(21, 5, name = 'paso 4.b')
     wiresPuzzle1 = WiresPuzzle(wire1, wire2, name = 'Conexiones1')
-
     
-   # switch1 = Thing(None, 23, name = 'switch')
+    selector1 = Thing(None, 10, 12 ,name = 'on/off')
 
-    gameSecuence = [ wiresPuzzle1 ]
+    wire3 = Thing(3, 33, name = 'paso 6.a')
+    wire4 = Thing(19, 15, name = 'paso 6.b')
+    wiresPuzzle2 = WiresPuzzle(wire1, wire2, name = 'Conexiones2')
+
+    switch1 = Thing(None, 16, name = 'on/off')
+
+    gameSecuence = [ wiresPuzzle1, selector1, wiresPuzzle2, switch1 ]
     game = Game(gameSecuence)
-
 
     main()
 
