@@ -3,8 +3,9 @@
 import json
 import time
 import RPi.GPIO as GPIO
-import sys
 import subprocess 
+import logging
+
 
 class Relay():
     def __init__(self, pin):
@@ -57,11 +58,11 @@ class Thing():
             if GPIO.input(self.validPort):
                 """ Double check due to false positives"""
                 self.completed = True
-                print ("Paso completado : ", self.name)
+                logging.debug( '%s  %s: True' , self.name, self.validPort)
                 return True
         else:
             self.completed = False
-            print ("Paso completado : ", self.name)
+            logging.debug ('%s %s: False', self.name, self.validPort)
             return False
         GPIO.output(self.activePort, False) if self.activePort else None
         
@@ -71,10 +72,10 @@ class Thing():
         GPIO.output(self.activePort, True)  if self.activePort else None
         for port in self.inputPorts:
             if GPIO.input(port):
-                print(self.name, ' NO Reseteado', ' port: ', port)
+                logging.debug('NO reseteado %s %s', self.name, port)
                 return False
             else:
-                print(self.name, ' Reseteado')
+                logging.debug('Reseteado %s ', self.name)
                 return True
 
 
@@ -106,7 +107,7 @@ class WiresPuzzle():
             return False
         else:
             self.completed = True
-            # print('Puzzle Wires Completed')
+            logging.debug('- Completed %s', self.name)
             return True
 
 
@@ -117,9 +118,9 @@ class WiresPuzzle():
             self.reset.append(step.checkReset())
         if False in self.reset:
             return False
-            print ("Paso NO completado : ", self.name)
+            logging.debug ('NO reseteado %s', self.name)
         else:
-            print ("Paso completado : ", self.name)
+            logging.debug ('Reseteado %s', True)
             return True   
 
 
@@ -147,15 +148,15 @@ def setGpio(gpiolist, io):
 
 def playEnd():
     subprocess.run(['killall', 'omxplayer.bin'])
-    omxc =  subprocess.run(['omxplayer', '-b', movie])
+    omxc =  subprocess.run(['omxplayer', '-o','local','-b', movie])
 
 def main():
     playingMovie = False
     while True:
         currentCheck = False
-        print(game.secuence)
+        logging.debug('Secuencia %s', game.secuence)
         for step in ( step for step in game.secuence if game.secuence.index(step) < game.currentStep ):
-            print(step.name)
+            logging.debug('Paso %s',step.name)
             """ iterate for each game step until the current one """
             while currentCheck == False: 
                 if step.checkCompleted():
@@ -184,27 +185,33 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BOARD)
     movie=("/data/precuelaGotham.mp4")
 
-    relay = Relay(38)
+    relay = Relay(40)
 
     wire1 = Thing(37, 7, name = 'paso 4.a')
-    wire2 = Thing(21, 5, name = 'paso 4.b')
+    wire2 = Thing(21, 18, name = 'paso 4.b')
+    #wire2 = Thing(21, 5, name = 'paso 4.b')
     wiresPuzzle1 = WiresPuzzle(wire1, wire2, name = 'Conexiones1')
     
-    selector1 = Thing(None, 10, 12 ,name = 'on/off')
+    selector1 = Thing(None, 10, 12, name = 'selector')
 
-    wire3 = Thing(3, 33, name = 'paso 6.a')
+    wire3 = Thing(33, 38, name = 'paso 6.a')
     wire4 = Thing(19, 15, name = 'paso 6.b')
-    wiresPuzzle2 = WiresPuzzle(wire1, wire2, name = 'Conexiones2')
+    wiresPuzzle2 = WiresPuzzle(wire3, wire4, name = 'Conexiones2')
 
     switch1 = Thing(None, 16, name = 'on/off')
 
     gameSecuence = [ wiresPuzzle1, selector1, wiresPuzzle2, switch1 ]
     game = Game(gameSecuence)
-
+    while True:
+        for step in gameSecuence:
+            logging.debug('Paso %s %s', step.name, step.checkCompleted())
+        time.sleep(2)
     main()
 
     GPIO.cleanup()
