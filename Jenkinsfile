@@ -28,10 +28,9 @@ echo "Jenkins build"'''
       agent any
       steps {
         sh 'date'
-        dir(path: '.')
       }
     }
-    stage('') {
+    stage('error') {
       steps {
         mail(subject: 'Asunto', body: 'cuerpo', from: 'ru@ru.gmail', to: 'rubick@gmail.com')
       }
