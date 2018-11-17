@@ -1,11 +1,12 @@
 pipeline {
   agent any
   stages {
-    stage('error') {
+    stage('build') {
       steps {
         sh '''#!/bin/bash
 date
 echo "Jenkins build"'''
+        echo 'Mensaje'
       }
     }
   }
